@@ -84,6 +84,7 @@ defmodule Oaskit.Spec.Parameter do
     |> normalize_schema(:schema)
     |> skip(:content)
     |> collect()
+    |> format_array_parameter_name_for_openapi()
   end
 
   def from_controller!(_name, %Reference{} = ref) do
@@ -106,6 +107,24 @@ defmodule Oaskit.Spec.Parameter do
       end
     end)
     |> into()
+  end
+
+  defp format_array_parameter_name_for_openapi(
+         {%{"name" => name, "in" => "query", "schema" => %{"type" => "array"}} = data, ctx}
+       )
+       when is_binary(name) do
+    data =
+      if String.ends_with?(name, "[]") do
+        data
+      else
+        Map.update!(data, "name", &(&1 <> "[]"))
+      end
+
+    {data, ctx}
+  end
+
+  defp format_array_parameter_name_for_openapi({data, ctx}) do
+    {data, ctx}
   end
 
   defp validate_location(loc) do
